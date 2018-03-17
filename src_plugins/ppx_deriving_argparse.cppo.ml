@@ -74,10 +74,11 @@ let perr_msg { pld_name = { txt = name; loc }; pld_type; pld_attributes } =
         [%expr fun out -> Ppx_deriving_runtime.Format.fprintf out "%a%!" [%e f]]
       | _ -> begin match attr_print pld_attributes with
           | Some f ->
+                let f = [%expr fun out v -> Ppx_deriving_runtime.Format.fprintf out "%s%!" ([%e f] v)] in
                 [%expr fun out -> Ppx_deriving_runtime.Format.fprintf out "%a%!" [%e f]]
           | None -> 
                   let f = [%expr fun out v ->
-                      Ppx_deriving_runtime.Format.pp_print_string out "<none>"] in
+                      Ppx_deriving_runtime.Format.pp_print_string out "<unknown>"] in
                 [%expr fun out -> Ppx_deriving_runtime.Format.fprintf out "%a%!" [%e f]]
       end in
     format (aux pld_type)

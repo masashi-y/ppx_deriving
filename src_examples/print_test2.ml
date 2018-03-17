@@ -5,12 +5,12 @@ let parse_activation = function
     "relu" -> Relu | "sigmoid" -> Sigmoid | "tanh" -> Tanh | "silu" -> Silu | "softmax" -> Softmax
     | s -> raise (Invalid_argument s)
 
-let show_activation out = function
-    Relu -> Format.fprintf out "relu"
- | Sigmoid -> Format.fprintf out "sigmoid"
- | Tanh -> Format.fprintf out "tanh"
- | Silu -> Format.fprintf out "silu"
- | Softmax -> Format.fprintf out "softmax"
+let show_activation = function
+    | Relu -> "relu"
+    | Sigmoid -> "sigmoid"
+    | Tanh -> "tanh"
+    | Silu -> "silu"
+    | Softmax -> "softmax"
 
 type t = {
     src_vocab_size : int   [@help "the source vocabulary size"];
@@ -24,6 +24,8 @@ type t = {
     test2 : int option list;
     activation : activation [@help "activation function in feed forward layers"]
                             [@print show_activation] [@parse parse_activation];
+    activation2 : activation [@help "activation function in feed forward layers"]
+                            [@parse parse_activation];
 } [@@deriving argparse]
 
 
@@ -38,6 +40,7 @@ let default = {
     test = Some [1;2;3];
     test2 = [Some 1;Some 2;Some 3; None];
     activation = Relu;
+    activation2 = Sigmoid;
 }
 
 let () =
