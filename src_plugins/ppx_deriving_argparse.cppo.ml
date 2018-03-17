@@ -16,16 +16,11 @@ let parse_options options =
 let attr_help attrs =
   Ppx_deriving.(attrs |> attr ~deriver "help" |> Arg.(get_attr ~deriver string))
 
-let attr_fun attrs =
-  Ppx_deriving.(attrs |> attr ~deriver "fun" |> Arg.(get_attr ~deriver expr))
+let attr_parse attrs =
+  Ppx_deriving.(attrs |> attr ~deriver "parse" |> Arg.(get_attr ~deriver expr))
 
-let sig_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
-  parse_options options;
-  let typ0 = Ppx_deriving.core_type_of_type_decl type_decl in
-  let typ_parse = [%type: [%t typ0] -> string array -> [%t typ0] * string array] in
-  let typ_perr = [%type: [%t typ0] -> unit] in
-  [Sig.value (Val.mk (mknoloc (Ppx_deriving.mangle_type_decl (`Prefix deriver) type_decl)) typ_parse);
-  Sig.value (Val.mk (mknoloc (Ppx_deriving.mangle_type_decl (`PrefixSuffix (deriver, "perr")) type_decl)) typ_perr)]
+let attr_print attrs =
+  Ppx_deriving.(attrs |> attr ~deriver "print" |> Arg.(get_attr ~deriver expr))
 
 let string_replace c_in c_out str =
     String.init (String.length str)
@@ -61,7 +56,7 @@ let perr_msg { pld_name = { txt = name; loc }; pld_type; pld_attributes } =
                       if sep then Ppx_deriving_runtime.Format.fprintf out "; ";
                         [%e aux typ] out v; true) false v);
                   Ppx_deriving_runtime.Format.pp_print_string out "]"] in
-        [%expr fun out -> Ppx_deriving_runtime.Format.fprintf out [%e str "%a%!"] [%e f]]
+        [%expr fun out -> Ppx_deriving_runtime.Format.fprintf out "%a%!" [%e f]]
       | [%type: [%t? typ] array] ->
               let f = [%expr fun out v ->
                   Ppx_deriving_runtime.Format.pp_print_string out "[|";
@@ -69,16 +64,24 @@ let perr_msg { pld_name = { txt = name; loc }; pld_type; pld_attributes } =
                       if sep then Ppx_deriving_runtime.Format.fprintf out ", ";
                         [%e aux typ] out v; true) false v);
                   Ppx_deriving_runtime.Format.pp_print_string out "|]"] in
-        [%expr fun out -> Ppx_deriving_runtime.Format.fprintf out [%e str "%a%!"] [%e f]]
+        [%expr fun out -> Ppx_deriving_runtime.Format.fprintf out "%a%!" [%e f]]
       | [%type: [%t? typ] option] ->
             let f = [%expr fun out v ->
                 match v with
                     | None -> Ppx_deriving_runtime.Format.pp_print_string out "None"
                     | Some v -> (Ppx_deriving_runtime.Format.pp_print_string out "Some ";
                                  [%e aux typ] out v;)] in
-        [%expr fun out -> Ppx_deriving_runtime.Format.fprintf out [%e str "%a%!"] [%e f]]
-      | _ -> assert false in
+        [%expr fun out -> Ppx_deriving_runtime.Format.fprintf out "%a%!" [%e f]]
+      | _ -> begin match attr_print pld_attributes with
+          | Some f ->
+                [%expr fun out -> Ppx_deriving_runtime.Format.fprintf out "%a%!" [%e f]]
+          | None -> 
+                  let f = [%expr fun out v ->
+                      Ppx_deriving_runtime.Format.pp_print_string out "<none>"] in
+                [%expr fun out -> Ppx_deriving_runtime.Format.fprintf out "%a%!" [%e f]]
+      end in
     format (aux pld_type)
+
 
 let get_parse_fun { pld_name = { txt = name; loc }; pld_type; pld_attributes } =
     let wrap f =
@@ -99,18 +102,24 @@ let get_parse_fun { pld_name = { txt = name; loc }; pld_type; pld_attributes } =
         | [%type: String.t]    -> wrap [%expr fun s -> s]
         | [%type: [%t? typ] list]  ->
                 let parse_comma_sep = [%expr fun v ->
-                        let v = Ppx_deriving_runtime.String.split_on_char ',' v in
-                        Ppx_deriving_runtime.List.map (fun v -> [%e aux typ] (Ppx_deriving_runtime.String.trim v)) v] in
+                    let v = Ppx_deriving_runtime.String.split_on_char ',' v in
+                    Ppx_deriving_runtime.List.map (fun v -> [%e aux typ] (Ppx_deriving_runtime.String.trim v)) v] in
                 wrap parse_comma_sep
         | [%type: [%t? typ] array] ->
                 let parse_comma_sep = [%expr fun v ->
-                        let v = Ppx_deriving_runtime.String.split_on_char ',' v in
-                        let v = Ppx_deriving_runtime.List.map (fun v -> [%e aux typ] (Ppx_deriving_runtime.String.trim v)) v in
-                        Ppx_deriving_runtime.Array.of_list v] in
+                    let v = Ppx_deriving_runtime.String.split_on_char ',' v in
+                    let v = Ppx_deriving_runtime.List.map (fun v -> [%e aux typ] (Ppx_deriving_runtime.String.trim v)) v in
+                    Ppx_deriving_runtime.Array.of_list v] in
                 wrap parse_comma_sep
         | [%type: [%t? typ] option] -> wrap [%expr fun v -> Some ([%e aux typ] v)]
-        | _ -> assert false in
+        | _ -> begin match attr_parse pld_attributes with
+            | Some f -> wrap f
+            | None -> raise_errorf ~loc "deriving %s requires [@] annotation for type: %s"
+                                         deriver (Ppx_deriving.string_of_core_type pld_type)
+        end
+    in
     aux pld_type
+
 
 let str_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
   parse_options options;
@@ -133,13 +142,13 @@ let str_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
   match type_decl.ptype_kind with
   | Ptype_record labels ->
     let creator, cases, options =
-        List.fold_right (fun ({ pld_name = { txt = name; loc }; pld_type; pld_attributes } as fld) (msgs, cases, options) ->
+        List.fold_right (fun ({ pld_name = { txt = name; loc }; pld_type; pld_attributes } as pld) (msgs, cases, options) ->
           let option = "-" ^ (string_replace '_' '-' name) in
           let msg0 = match attr_help pld_attributes with
               | Some msg -> msg
-              | None -> "no message" in
-          let msg = perr_msg fld option name msg0 in
-          let parse_fun = get_parse_fun fld in
+              | None -> "" in
+          let msg = perr_msg pld option name msg0 in
+          let parse_fun = get_parse_fun pld in
           let expr = Exp.record [lid name, [%expr [%e parse_fun] i]] (Some [%expr cfg]) in
           let expr = [%expr aux [%e expr] rest] in
           let case = Exp.case [%pat? [%p pstr option] :: i :: rest] ~guard:[%expr not (is_option i)] expr in
@@ -147,7 +156,8 @@ let str_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
     let cases = init_cases @ cases in
     let fields = List.map (fun { pld_name = { txt }} -> (txt, pvar txt)) labels in
     let creator = Exp.fun_ Label.nolabel None (precord fields) (sequence (msg0 :: creator)) in
-    let argparse0 = [%expr fun cfg args -> try [%e Exp.match_ (evar "args") cases]
+    let argparse0 = [%expr fun cfg args ->
+        try [%e Exp.match_ (evar "args") cases]
         with Invalid_argument s ->
             Ppx_deriving_runtime.Printf.eprintf
                 "PARSE ERROR: Invalid argument for keyword option \"%s\": \"%s\"\n"
@@ -160,6 +170,16 @@ let str_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
     [Vb.mk (pvar perrfun_name) (Ppx_deriving.sanitize ~quoter creator);
      Vb.mk (pvar argparse_name) (Ppx_deriving.sanitize ~quoter argparse)]
   | _ -> raise_errorf ~loc "%s can be derived only for record types" deriver
+
+
+let sig_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
+  parse_options options;
+  let typ0 = Ppx_deriving.core_type_of_type_decl type_decl in
+  let typ_parse = [%type: [%t typ0] -> string array -> [%t typ0] * string array] in
+  let typ_perr = [%type: [%t typ0] -> unit] in
+  [Sig.value (Val.mk (mknoloc (Ppx_deriving.mangle_type_decl (`Prefix deriver) type_decl)) typ_parse);
+  Sig.value (Val.mk (mknoloc (Ppx_deriving.mangle_type_decl (`PrefixSuffix (deriver, "perr")) type_decl)) typ_perr)]
+
 
 let () =
   Ppx_deriving.(register (create deriver
