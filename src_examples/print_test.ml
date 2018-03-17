@@ -1,365 +1,73 @@
 
-type t =
-  | Leaf of int
-  | Node of t list
-  [@@deriving show]
+type t = {
+    src_vocab_size : int   [@help "the source vocabulary size"];
+    tgt_vocab_size : int   [@help "the target vocabulary size"];
+    num_units      : int   [@help "the number of units"];
+    nheads         : int   [@help "the number of multi-head attention"];
+    nlayers        : int   [@help "the number of layers"];
+    use_dropout    : bool  [@help "true if use dropout"];
+    dropout_rate   : float option [@help "dropout rate"];
+    test : int list option [@help "this is an test argument"];
+    test2 : int option list;
+} [@@deriving argparse]
 
-let test_case =
-  (Node
-     [(Node
-         [(Node
-             [(Node
-                 [(Node
-                     [(Node [(Node [(Leaf 81)])]);
-                      (Node
-                         [(Node
-                             [(Leaf 43);
-                              (Node
-                                 [(Leaf 71); (Leaf 75);
-                                  (Leaf 92)]);
-                              (Node
-                                 [(Node
-                                     [(Leaf 63); (Leaf 82);
-                                      (Leaf 69); (Leaf 95)])])])])]);
-                  (Node
-                     [(Node
-                         [(Leaf 30); (Leaf 63); (Leaf 36);
-                          (Leaf 67)])])]);
-              (Node
-                 [(Leaf 15);
-                  (Node
-                     [(Leaf 94); (Leaf 93);
-                      (Node
-                         [(Leaf 62); (Leaf 76); (Leaf 4);
-                          (Leaf 37)])])]);
-              (Node
-                 [(Node
-                     [(Node
-                         [(Node
-                             [(Leaf 23);
-                              (Node
-                                 [(Node [(Leaf 59); (Leaf 58)]);
-                                  (Leaf 4)]); (Leaf 9);
-                              (Leaf 90)]);
-                          (Node
-                             [(Leaf 42);
-                              (Node
-                                 [(Leaf 54);
-                                  (Node
-                                     [(Leaf 49); (Leaf 96);
-                                      (Leaf 64); (Leaf 96)])])]);
-                          (Leaf 16);
-                          (Node
-                             [(Leaf 23); (Leaf 11);
-                              (Node
-                                 [(Leaf 66); (Leaf 4);
-                                  (Leaf 29); (Leaf 92)]);
-                              (Leaf 45)])]);
-                      (Node
-                         [(Leaf 73); (Node [(Leaf 83)]);
-                          (Leaf 49)])]);
-                  (Node
-                     [(Node [(Leaf 80); (Leaf 43)]);
-                      (Leaf 50); (Node [(Leaf 87)])]);
-                  (Node [(Leaf 48)]);
-                  (Node
-                     [(Node
-                         [(Leaf 79); (Leaf 73); (Leaf 8);
-                          (Leaf 24)]); (Leaf 49); (Leaf 53)])]);
-              (Node
-                 [(Node
-                     [(Node
-                         [(Node
-                             [(Node
-                                 [(Node
-                                     [(Node
-                                         [(Leaf 61); (Leaf 20)])]);
-                                  (Leaf 27); (Leaf 30);
-                                  (Node [(Leaf 4)])])])]);
-                      (Node
-                         [(Node
-                             [(Node
-                                 [(Node
-                                     [(Node
-                                         [(Node
-                                             [(Leaf 6); (Leaf 33);
-                                              (Leaf 80)]);
-                                          (Leaf 19)]); (Leaf 28)])])]);
-                          (Leaf 4); (Leaf 65); (Leaf 1)]);
-                      (Node [(Leaf 22); (Leaf 93)]);
-                      (Leaf 65)])])]);
-          (Node
-             [(Node
-                 [(Node
-                     [(Node
-                         [(Leaf 63);
-                          (Node
-                             [(Node
-                                 [(Node
-                                     [(Node
-                                         [(Leaf 79); (Leaf 2);
-                                          (Node
-                                             [(Leaf 66); (Leaf 53)]);
-                                          (Node
-                                             [(Leaf 7); (Leaf 42);
-                                              (Leaf 31);
-                                              (Node
-                                                 [(Leaf 58);
-                                                  (Leaf 87);
-                                                  (Leaf 52)])])]);
-                                      (Node
-                                         [(Leaf 37); (Leaf 74);
-                                          (Node
-                                             [(Leaf 43); (Leaf 98);
-                                              (Leaf 28); (Leaf 52)]);
-                                          (Leaf 50)])])]);
-                              (Leaf 98)]);
-                          (Node
-                             [(Leaf 77); (Node [(Leaf 79)]);
-                              (Node
-                                 [(Node
-                                     [(Leaf 17); (Leaf 4);
-                                      (Leaf 21); (Leaf 34)]);
-                                  (Leaf 64);
-                                  (Node
-                                     [(Node
-                                         [(Node
-                                             [(Leaf 31); (Leaf 60);
-                                              (Node
-                                                 [(Node
-                                                     [(Node
-                                                         [(Node
-                                                             [(Leaf 14);
-                                                              (Leaf 11);
-                                                              (Leaf 27);
-                                                              (Leaf 43)]);
-                                                          (Leaf 21)]);
-                                                      (Leaf 3)])])])])]);
-                                  (Node
-                                     [(Leaf 93); (Leaf 3);
-                                      (Leaf 37)])])])]);
-                      (Node
-                         [(Node
-                             [(Node
-                                 [(Node
-                                     [(Leaf 37);
-                                      (Node
-                                         [(Node
-                                             [(Node
-                                                 [(Leaf 59);
-                                                  (Leaf 37)])]);
-                                          (Leaf 98)])])]);
-                              (Node
-                                 [(Node
-                                     [(Leaf 54); (Leaf 72);
-                                      (Leaf 21)]);
-                                  (Node [(Leaf 87); (Leaf 25)])]);
-                              (Node
-                                 [(Leaf 45);
-                                  (Node
-                                     [(Node
-                                         [(Leaf 35); (Leaf 72);
-                                          (Leaf 14)]); (Leaf 93);
-                                      (Node
-                                         [(Node [(Leaf 75)])])]);
-                                  (Node
-                                     [(Leaf 30);
-                                      (Node [(Leaf 21)]);
-                                      (Node
-                                         [(Leaf 0); (Leaf 5);
-                                          (Node
-                                             [(Leaf 97); (Leaf 15)])]);
-                                      (Node [(Leaf 55)])])])])]);
-                      (Leaf 34);
-                      (Node
-                         [(Node
-                             [(Node
-                                 [(Node
-                                     [(Node
-                                         [(Leaf 90); (Leaf 54);
-                                          (Node
-                                             [(Leaf 34);
-                                              (Node
-                                                 [(Leaf 80);
-                                                  (Leaf 45)])])])]);
-                                  (Node
-                                     [(Node
-                                         [(Leaf 87); (Leaf 92);
-                                          (Node
-                                             [(Node
-                                                 [(Leaf 61);
-                                                  (Node
-                                                     [(Leaf 96);
-                                                      (Leaf 19)])]);
-                                              (Leaf 25)]);
-                                          (Leaf 32)])])])]);
-                          (Node
-                             [(Node
-                                 [(Node
-                                     [(Leaf 80); (Leaf 4);
-                                      (Leaf 15)]);
-                                  (Node
-                                     [(Leaf 37);
-                                      (Node [(Leaf 77)]);
-                                      (Leaf 74); (Leaf 52)]);
-                                  (Leaf 98)])])])]);
-                  (Node
-                     [(Node
-                         [(Node
-                             [(Leaf 53); (Leaf 56);
-                              (Node
-                                 [(Leaf 21); (Leaf 48);
-                                  (Leaf 63); (Leaf 58)]);
-                              (Leaf 12)]);
-                          (Node
-                             [(Leaf 43); (Leaf 11);
-                              (Node [(Leaf 84); (Leaf 50)])]);
-                          (Node
-                             [(Node
-                                 [(Leaf 6);
-                                  (Node
-                                     [(Leaf 13); (Leaf 28);
-                                      (Leaf 80)]);
-                                  (Node [(Leaf 5); (Leaf 37)])]);
-                              (Leaf 5); (Leaf 31); (Leaf 51)]);
-                          (Leaf 59)]);
-                      (Node
-                         [(Node
-                             [(Leaf 15);
-                              (Node
-                                 [(Leaf 55); (Leaf 25);
-                                  (Leaf 58); (Leaf 0)]);
-                              (Leaf 88)]);
-                          (Node
-                             [(Node [(Leaf 37)]);
-                              (Node
-                                 [(Node
-                                     [(Leaf 0); (Leaf 40);
-                                      (Node
-                                         [(Leaf 28); (Leaf 24);
-                                          (Node
-                                             [(Leaf 99); (Leaf 70)]);
-                                          (Node
-                                             [(Leaf 86); (Leaf 52);
-                                              (Leaf 72); (Leaf 41)])])]);
-                                  (Node
-                                     [(Node
-                                         [(Leaf 16);
-                                          (Node
-                                             [(Leaf 87); (Leaf 16);
-                                              (Leaf 61)])])])]);
-                              (Node
-                                 [(Node
-                                     [(Leaf 13); (Leaf 51);
-                                      (Leaf 78);
-                                      (Node
-                                         [(Leaf 69); (Leaf 8);
-                                          (Leaf 70)])]); (Leaf 8);
-                                  (Leaf 13); (Leaf 22)]);
-                              (Node
-                                 [(Leaf 98); (Leaf 25);
-                                  (Leaf 14); (Leaf 28)])])]);
-                      (Node
-                         [(Node
-                             [(Leaf 62);
-                              (Node
-                                 [(Leaf 65);
-                                  (Node
-                                     [(Leaf 13); (Leaf 78);
-                                      (Leaf 52)]); (Leaf 26);
-                                  (Leaf 64)])])])])]);
-              (Node
-                 [(Leaf 18); (Node [(Leaf 50)]);
-                  (Leaf 84)]);
-              (Node
-                 [(Node
-                     [(Node
-                         [(Leaf 2); (Leaf 18);
-                          (Node [(Leaf 75)])]); (Leaf 15)]);
-                  (Node [(Leaf 69); (Leaf 66)]);
-                  (Node [(Leaf 59); (Node [(Leaf 84)])]);
-                  (Node
-                     [(Leaf 57);
-                      (Node
-                         [(Node
-                             [(Node
-                                 [(Node
-                                     [(Leaf 40); (Leaf 9);
-                                      (Leaf 1)])]);
-                              (Node
-                                 [(Leaf 81); (Leaf 82);
-                                  (Node
-                                     [(Leaf 86); (Leaf 14);
-                                      (Leaf 67); (Leaf 58)])]);
-                              (Node [(Leaf 25)]);
-                              (Node
-                                 [(Leaf 53);
-                                  (Node
-                                     [(Leaf 97); (Leaf 48);
-                                      (Leaf 90)])])]); (Leaf 97);
-                          (Node
-                             [(Node [(Leaf 80); (Leaf 28)])]);
-                          (Node
-                             [(Leaf 61); (Leaf 79); (Leaf 60);
-                              (Leaf 81)])]);
-                      (Node
-                         [(Node [(Node [(Leaf 5)])]);
-                          (Node
-                             [(Node
-                                 [(Node [(Leaf 89)]);
-                                  (Node
-                                     [(Leaf 41); (Leaf 79);
-                                      (Leaf 47)]); (Leaf 78);
-                                  (Node
-                                     [(Leaf 20); (Leaf 39);
-                                      (Node [(Leaf 54)])])])]);
-                          (Node
-                             [(Node [(Leaf 55)]);
-                              (Node
-                                 [(Leaf 64); (Leaf 45);
-                                  (Leaf 92); (Leaf 45)])])])])]);
-              (Node
-                 [(Node
-                     [(Node [(Leaf 58)]);
-                      (Node
-                         [(Leaf 63); (Leaf 47);
-                          (Node
-                             [(Leaf 34);
-                              (Node
-                                 [(Leaf 39);
-                                  (Node
-                                     [(Leaf 69); (Leaf 10);
-                                      (Leaf 24)]);
-                                  (Node
-                                     [(Leaf 20); (Leaf 32);
-                                      (Leaf 12); (Leaf 9)])]);
-                              (Leaf 46)])]); (Leaf 29);
-                      (Node
-                         [(Leaf 78); (Leaf 35); (Leaf 15)])]);
-                  (Node
-                     [(Node
-                         [(Node
-                             [(Leaf 27); (Leaf 56); (Leaf 21);
-                              (Leaf 89)]);
-                          (Node
-                             [(Leaf 69);
-                              (Node
-                                 [(Node [(Leaf 94)]);
-                                  (Leaf 21)]);
-                              (Node
-                                 [(Leaf 76); (Leaf 35);
-                                  (Node
-                                     [(Leaf 39); (Leaf 40);
-                                      (Leaf 52)]); (Leaf 21)])])]);
-                      (Leaf 97);
-                      (Node [(Leaf 30); (Leaf 93)])]);
-                  (Node [(Leaf 38)]);
-                  (Node
-                     [(Leaf 34);
-                      (Node
-                         [(Leaf 13); (Leaf 1);
-                          (Node [(Leaf 44); (Leaf 93)])])])])])])])
+let perr_config c =
+    Printf.eprintf "Options:\n";
+  Printf.eprintf "  -src-vocab-size SRC_VOCAB_SIZE\t: %s [%i]\n" "the source vocabulary size" c.src_vocab_size;
+  Printf.eprintf "  -tgt-vocab-size TGT_VOCAB_SIZE\t: %s [%i]\n" "the target vocabulary size" c.tgt_vocab_size;
+  Printf.eprintf "  -num-units NUM_UNITS\t: %s [%i]\n" "the number of units" c.num_units;
+  Printf.eprintf "  -nheads NHEADS\t: %s [%i]\n" "the number of multi-head attention" c.nheads;
+  Printf.eprintf "  -nlayers NLAYERS\t: %s [%i]\n" "the number of layers" c.nlayers;
+  Printf.eprintf "  -use-dropout\t: %s [%B]\n" "true if use dropout" c.use_dropout
+  (* Printf.eprintf "  -dropout-rate DROPOUT_RATE\t: %s [%f]\n" "dropout rate" c.dropout_rate *)
+
+
+let default = {
+    src_vocab_size = 0;
+    tgt_vocab_size = 0;
+    num_units = 512;
+    nheads = 8;
+    nlayers = 6;
+    use_dropout = true;
+    dropout_rate = Some 0.1;
+    test = Some [1;2;3];
+    test2 = [Some 1;Some 2;Some 3; None];
+}
+
+let parse default argv = 
+    let options = ["-src-vocab-size"; "-tgt-vocab-size"; "-num-units"; "-nheads"; "-nlayers"; "-use-dropout"; "-dropout-rate"] in
+    let is_option o = List.mem o options in
+    let rec aux cfg args = try (match args with
+        | [] -> (cfg, [])
+        | "--" :: rest -> (cfg, rest)
+        | "-src-vocab-size" :: i :: rest when not (is_option i)
+            -> aux {cfg with src_vocab_size = (fun v -> try int_of_string v with _ -> raise (Invalid_argument v)) i} rest
+        | "-tgt-vocab-size" :: i :: rest when not (is_option i)
+            -> aux {cfg with tgt_vocab_size = (fun v -> try int_of_string v with _ -> raise (Invalid_argument v)) i} rest
+        | "-num-units" :: i :: rest when not (is_option i)
+            -> aux {cfg with num_units = (fun v -> try int_of_string v with _ -> raise (Invalid_argument v)) i} rest
+        | "-nheads" :: i :: rest when not (is_option i)
+            -> aux {cfg with nheads = (fun v -> try int_of_string v with _ -> raise (Invalid_argument v)) i} rest
+        | "-nlayers" :: i :: rest when not (is_option i)
+            -> aux {cfg with nlayers = (fun v -> try int_of_string v with _ -> raise (Invalid_argument v)) i} rest
+        | "-use-dropout" :: rest
+            -> aux {cfg with use_dropout = false} rest
+        | "-dropout-rate" :: i :: rest when not (is_option i)
+            -> aux {cfg with dropout_rate = (fun v -> try Some (float_of_string v) with _ -> raise (Invalid_argument v)) i} rest
+        | arg :: rest when is_option arg ->
+            Printf.eprintf "PARSE ERROR: Option without required argument: \"%s\"\n" arg;
+            perr_config default; exit 2
+        | arg :: rest when arg.[0] = '-' ->
+            Printf.eprintf "PARSE ERROR: Invalid option: \"%s\"\n" arg;
+            perr_config default; exit 2
+        | rest -> (cfg, rest))
+    with Invalid_argument s ->
+        Printf.eprintf "PARSE ERROR: Invalid argument for keyword option \"%s\": \"%s\"\n" (List.hd args) s; exit 2 in
+    let cfg, rest = aux default (List.tl (Array.to_list argv)) in
+    cfg, Array.of_list rest
 
 let () =
-  Format.printf "tree: %a@." pp test_case;
-  ()
+    let cfg, rest = argparse default Sys.argv in
+    argparse_perr cfg;
+    Array.iter print_endline rest
+

@@ -20,3 +20,6 @@ true: warn(@5@8@10@11@12@14@23@24@26@29@40), bin_annot, safe_string, debug, cppo
 "src_test/test_deriving_make.ml": deriving(show,make)
 "src_test/test_ppx_deriving.ml": deriving(show,ord,eq)
 "src_examples/print_test.ml": deriving(show), ppx_native
+
+<src_examples/*.{ml,byte,native}>: debug, package(oUnit ppx_tools compiler-libs.common result ppx_derivers ocaml-migrate-parsetree), use_deriving
+"src_examples/print_test.ml": deriving(argparse)

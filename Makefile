@@ -13,7 +13,13 @@ test: build
 
 examples: build
 	rm -rf _build/src_examples/
-	$(OCAMLBUILD) src_examples/print_test.byte
+	$(OCAMLBUILD) src_examples/print_test.byte --
+
+show: build
+	cd _build && ocamlfind ocamlc -dsource -c -g -bin-annot -safe-string \
+	-ppx 'src/ppx_deriving_main.native src_plugins/ppx_deriving_argparse.cma' \
+	-package 'oUnit ppx_tools compiler-libs.common result ppx_derivers ocaml-migrate-parsetree' \
+	-I src_examples -I src -o src_examples/print_test.cmo src_examples/print_test.ml
 
 doc:
 	$(OCAMLBUILD) doc/api.docdir/index.html \
